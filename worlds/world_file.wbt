@@ -1,0 +1,53 @@
+#VRML_SIM R2020b utf8
+WorldInfo {
+  info [
+    "CSCI 3302 Lab 5: Path Planning"
+    "Prof. Brad Hayes, University of Colorado Boulder, Fall 2020"
+  ]
+  title "E-Puck"
+  coordinateSystem "NUE"
+  lineScale 0.04
+}
+Viewpoint {
+  orientation 1 0 0 4.71238898038469
+  position 0.6040689097985678 2.4680439662104567 0.6026140048328625
+  follow "e-puck"
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  translation 0.5 0 0.5
+  floorTileSize 1 1
+  floorAppearance PBRAppearance {
+    baseColorMap ImageTexture {
+      url [
+        "texture/varnished_pine_base_color.jpg"
+      ]
+    }
+    roughness 0.2
+    metalness 0
+  }
+  wallHeight 0.05
+}
+DEF EPUCK E-puck {
+  hidden position_0_0 -3.100665406168946e-08
+  hidden position_0_1 -3.1006729445403816e-08
+  hidden linearVelocity_0 5.4343509690772046e-12 1.1842378929335004e-15 4.152592414441491e-09
+  hidden angularVelocity_0 -1.3657190318696048e-07 -5.051300474358429e-12 1.780624149532268e-10
+  hidden rotation_1 1 0 0 2.9802322387695313e-08
+  hidden linearVelocity_1 4.5426499684290325e-12 -5.329072087193667e-16 3.4698026174066228e-09
+  hidden angularVelocity_1 1.7349449500327495e-07 -3.2019226618078514e-12 -2.269237579638098e-10
+  hidden rotation_2 1 0 0 2.9802322387695313e-08
+  hidden linearVelocity_2 4.545677412068852e-12 5.329067196659864e-16 3.4698797957989874e-09
+  hidden angularVelocity_2 1.734951375920765e-07 -3.208725911715089e-12 -2.2757602183475392e-10
+  translation 0.8305560000001165 -6.396824233437584e-05 0.8806440000880598
+  rotation 1.306367923945573e-06 0.9999896447007557 0.004550877887813046 0.0013082034527990695
+  controller "csci3302_lab5_base"
+  supervisor TRUE
+  groundSensorsSlot [
+    E-puckGroundSensors {
+    }
+  ]
+}
