@@ -13,6 +13,12 @@ robot = supervisor.supervisor
 # get the time step of the current world.
 timestep = int(robot.getBasicTimeStep())
 
+#positions of obstacles 
+rubber_duck1 = (0.07, 0.01, 0.95)
+rubber_duck2 = (0.79, 0.01, -0.03)
+rubber_duck3 = (-0.150001, 0.01, 0.58)
+soda_can = (-0.18, 0.06, -0.17)
+
 # Robot Pose Values
 pose_x = 0
 pose_y = 0
