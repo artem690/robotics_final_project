@@ -226,7 +226,7 @@ MazeBlock {
 DEF EPUCK E-puck {
   translation 1.16092 -6.20042e-05 1.16029
   rotation 1.306367923945573e-06 0.9999896447007557 0.004550877887813046 0.0013082034527990695
-  controller "csci3302_lab5_base"
+  controller "controller_base"
   supervisor TRUE
   groundSensorsSlot [
     E-puckGroundSensors {
