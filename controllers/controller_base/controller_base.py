@@ -12,6 +12,10 @@ robot = supervisor.supervisor
 
 # get the time step of the current world.
 timestep = int(robot.getBasicTimeStep())
+obstacle_duck1 = (0.07, 0.01, 0.95)
+obstacle_duck2 = (-0.150001, 0.01, 0.58)
+obstacle_duck3 = (0.79, 0.01, -0.03)
+obstacle_soda = (-0.18, 0.06, -0.17)
 
 def hasObstacle():
     pass
