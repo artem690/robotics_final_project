@@ -49,10 +49,12 @@ def supervisor_get_obstacle_positions():
 
     root_children_field = supervisor.getRoot().getField("children") 
     for idx in range(root_children_field.getCount()):
-        if root_children_field.getMFNode(idx).getTypeName() == "CardboardBox":
+        if root_children_field.getMFNode(idx).getTypeName() == "MazeBlock":
             box_node = root_children_field.getMFNode(idx)
             box_coords = box_node.getField("translation").getSFVec3f()
-            coords_list.append(np.array([box_coords[0], 1 - box_coords[2]]))
+            length = box_node.getField("length").getSFFloat()
+            theta = box_node.getField("rotation").getSFRotation()[-1]
+            coords_list.append(np.array([np.array([box_coords[0], box_coords[2]]), length, theta], dtype=object))
 
     return coords_list
 
@@ -73,5 +75,5 @@ def supervisor_get_robot_pose():
     Returns robot position
     """
     robot_position = np.array(robot_node.getField("translation").getSFVec3f())
-    robot_pose = np.array([robot_position[0], 1. - robot_position[2], robot_node.getField("rotation").getSFRotation()[3]+math.pi/2])
+    robot_pose = np.array([robot_position[0], robot_position[2], robot_node.getField("rotation").getSFRotation()[3]+math.pi/2])
     return robot_pose
