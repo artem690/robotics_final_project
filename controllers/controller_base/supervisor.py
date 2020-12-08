@@ -50,13 +50,31 @@ def supervisor_get_obstacle_positions():
     root_children_field = supervisor.getRoot().getField("children") 
     for idx in range(root_children_field.getCount()):
         if root_children_field.getMFNode(idx).getTypeName() == "MazeBlock":
-            box_node = root_children_field.getMFNode(idx)
-            box_coords = box_node.getField("translation").getSFVec3f()
-            length = box_node.getField("length").getSFFloat()
-            theta = box_node.getField("rotation").getSFRotation()[-1]
-            coords_list.append(np.array([np.array([box_coords[0], box_coords[2]]), length, theta], dtype=object))
+            block_node = root_children_field.getMFNode(idx)
+            block_coords = block_node.getField("translation").getSFVec3f()
+            length = block_node.getField("length").getSFFloat()
+            theta = block_node.getField("rotation").getSFRotation()[-1]
+            coords_list.append(np.array([np.array([block_coords[0], block_coords[2]]), length, theta], dtype=object))
 
     return coords_list
+
+# collect all targets rubber ducks and can
+def supervisor_get_targets():
+    can_coords = []
+    target_collect = []
+    
+    root_children_field = supervisor.getRoot().getField("children") 
+    for idx in range(root_children_field.getCount()):
+        if root_children_field.getMFNode(idx).getTypeName() == "Can":
+            can_node = root_children_field.getMFNode(idx)
+            can_coords = can_node.getField("translation").getSFVec3f()
+        elif root_children_field.getMFNode(idx).getTypeName() == "RubberDuck":
+            duck_node = root_children_field.getMFNode(idx)
+            duck_coords = duck_node.getField("translation").getSFVec3f()
+            target_collect.append(duck_coords)
+    
+    target_collect.append(can_coords)
+    return target_collect
 
 def supervisor_get_target_pose():
     '''
