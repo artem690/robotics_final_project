@@ -67,13 +67,21 @@ def supervisor_get_targets():
     for idx in range(root_children_field.getCount()):
         if root_children_field.getMFNode(idx).getTypeName() == "Can":
             can_node = root_children_field.getMFNode(idx)
-            can_coords = can_node.getField("translation").getSFVec3f()[:2]
+            can_coords = can_node.getField("translation").getSFVec3f()
+            can_coords = [can_coords[0],can_coords[-1]]
         elif root_children_field.getMFNode(idx).getTypeName() == "RubberDuck":
             duck_node = root_children_field.getMFNode(idx)
             duck_coords = duck_node.getField("translation").getSFVec3f()
-            target_collect.append(duck_coords[:2])
+            duck_coords = [duck_coords[0],duck_coords[-1]]
+            target_collect.append(duck_coords)
     
+
     target_collect.append(can_coords)
+    
+    for t in target_collect:
+        t[0] += .25
+        t[1] += .25
+        
     return target_collect
 
 def supervisor_get_target_pose():

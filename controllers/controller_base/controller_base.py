@@ -24,11 +24,7 @@ robot = supervisor.supervisor
 timestep = int(robot.getBasicTimeStep())
 
 #positions of obstacles x y 
-rubber_duck1 = [0.07, 0.95] 
-rubber_duck2 = [0.79, -0.03]
-rubber_duck3 = [-0.150001, 0.58]
-soda_can = [-0.18, -0.17]
-targets = [rubber_duck1, rubber_duck2, rubber_duck3, soda_can]
+TARGETS = supervisor.supervisor_get_targets()
 
 # Robot Pose Values
 pose_x = 0
@@ -122,14 +118,17 @@ def get_wheel_speeds(target_pose):
     return phi_l_pct, phi_r_pct
     
 
-def visualize_2D_graph(state_bounds, line_segments, nodes, targets, goal_point=None, filename=None):
+def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filename=None):
+    global TARGETS
     fig = plt.figure()
     plt.xlim(state_bounds[0,0], state_bounds[0,1])
     plt.ylim(state_bounds[1,0], state_bounds[1,1])
     t = 1.5
-    for targ in targets:
-        x,y = targ[0]+0.25,targ[1]+0.25
-        plt.plot(x, 1.5-y, 'kX', markersize=15)
+    goal_point=None
+    
+    for targ in TARGETS:
+        x,y = targ[0],targ[1]
+        plt.plot(x, t-y, 'kX', markersize=10)
         
     for seg in line_segments:
         [x1,y1], [x2,y2] = seg
@@ -146,16 +145,19 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, targets, goal_point=N
             plt.plot(node.point[0], t - node.point[1], 'ro')
 
     plt.plot(nodes[0].point[0], t - nodes[0].point[1], 'ko')
-
-    if goal_node is not None:
-        cur_node = goal_node
-        while cur_node is not None:
-            if cur_node.parent is not None:
-                node_path = np.array(cur_node.path_from_parent)
-                plt.plot(node_path[:,0], t - node_path[:,1], '--y')
-                cur_node = cur_node.parent
-            else:
-                break
+    
+    if goals is not None:
+        for goal_node in goals:
+            cur_node = goal_node
+            while cur_node is not None:
+                if cur_node.parent is not None:
+                    node_path = np.array(cur_node.path_from_parent)
+                    plt.plot(node_path[:,0], t - node_path[:,1], '--y')
+                
+                if cur_node in paths:
+                    cur_node = paths[cur_node]
+                else:
+                    cur_node = None
 
     if goal_point is not None:
         plt.plot(goal_point[0], goal_point[1], 'gx')
@@ -240,96 +242,81 @@ def build_rrt(state_bounds, obstacles, state_is_valid, starting_point, goal_poin
         # add if path is clear
         if not has_obstacle:
             node_list.append(
-                Node(to_point, parent=node_list[-1], path_from_parent=[from_point, to_point])
+                Node(to_point, parent=q_near, path_from_parent=[from_point, to_point])
             )
 
     return node_list
-
-
-def get_neighbors(node_list, cur_node):
-    neighbors = []
-    for node in node_list:
-        if node.parent == cur_node:
-            neighbors.append(node)
-            
-    neighbors.append(cur_node.parent)
-    
-    return neighbors
     
 
 def get_path(node_list, start_node):
-    goals = supervisor.supervisor_get_targets()
-    goal_node = None
-    open_list = [start_node]
-    closed_list = []
-    costs = {start_node:0}
-    path = {start_node:None}
+    global TARGETS
+    goals = TARGETS[:]
+    visited = {start_node:None}
+
     for ix,goal in enumerate(goals):
-        goal_parent = get_nearest_vertex(node_list, goal)
-        goal_node = Node(goal, parent=goal_parent, path_from_parent=[goal_parent, goal])
-        node_list.append(goal_node)
-        goals[ix] = goal_node
+        goal_parent = get_valid_connect(node_list, goal)
+        
+        if goal_parent != -1:
+            goal_node = Node(goal, parent=goal_parent, path_from_parent=[goal, goal_parent.point])
+            node_list.append(goal_node)
+            goals[ix] = goal_node
+        else:
+            goals[ix] = None
+
+    goals = [g for g in goals if g] # remove None
+    for goal in goals:
+        cur_node = goal
+        
+        while cur_node:
+            found = False
+            visited[cur_node] = cur_node.parent
+            cur_node = cur_node.parent
+            
+    return visited, goals
+            
+        
+def get_valid_connect(node_list, q_point):
+    valid_connects = []
+    valid_indices = []
+            
+    for i,node in enumerate(node_list):
+        has_obstacle = False
+        if not state_is_valid(np.array(node.point), np.array(q_point)):
+            has_obstacle = True
+        
+        if not has_obstacle:
+            valid_connects.append(node.point)
+            valid_indices.append(i)
     
-    cur_node = start_node
-    while len(open_list) != 0:
-        neighbors = get_neighbors(node_list, cur_node)
+    if len(valid_connects) > 0:
+        # retrieve minimum distance index
+        index = np.argmin(np.linalg.norm(np.array(valid_connects)-np.array(q_point), axis=1))
         
-        for neighbor in neighbors:
-            if neighbor in closed_list:
-                continue
-            elif neighbor not in open_list:
-                path[neighbor] = cur_node
-                costs[neighbor] = costs[cur_node] + 1
-                open_list.append(neighbor)
-            elif costs[neighbor] < costs[cur_node] + 1:
-                costs[neighbor] = costs[cur_node] + 1
-                path[neighbor] = cur_node
-            
-        closed_list.append(cur_node)
-        open_list.remove(cur_node)
-        open_list = [x for x in open_list if x]
-        
-        min_val = 99999
-        for open_node in open_list:
-            if costs[open_node] < min_val:
-                min_val = costs[open_node]
-                cur_node = open_node
-                
-    return path, goals
-            
-        
+        return node_list[valid_indices[index]]
+    else:
+        return -1
+    
 
-def get_nearest_vertex(node_list, q_point):
-    filtered_node_list = [x.point for x in node_list]
 
-    # retrieve minimum distance index
-    index = np.argmin(np.linalg.norm(filtered_node_list-np.array(q_point), axis=1))
-
-    return node_list[index]
 
 
 def main():
-    global OBSTACLES, LINE_SEGMENTS, targets
+    global OBSTACLES, LINE_SEGMENTS
     # You should insert a getDevice-like function in order to get the
     # instance of a device of the robot. Something like:
     #  motor = robot.getMotor('motorname')
     #  ds = robot.getDistanceSensor('dsname')
     #  ds.enable(timestep)2
-    K = 150 # adjustable
+    K = 500 # adjustable
     start_pose = supervisor.supervisor_get_robot_pose()[:2]
     start_pose+=.25
     starting_point = Node(start_pose[:2], parent=None)
     obsTransform(OBSTACLES)
     node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, np.linalg.norm(MAP_BOUNDS/20.))
-    visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, None, 'rrt_maze_run.png')
     # pose_x, pose_y, pose_theta = start_pose
-    path, goals = get_path(node_list, starting_point)
-    print("***", path)    
-    print("$$$", goals)
-    g = goals[-1]
-    while g:
-        print(g.point)
-        g = path[g]
+    paths, goals = get_path(node_list, starting_point)
+    
+    visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
     # print(goals[-1].point)
     # g = goals[-1]
     # while path[g] != None:
