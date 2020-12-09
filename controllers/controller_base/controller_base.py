@@ -23,11 +23,12 @@ robot = supervisor.supervisor
 # get the time step of the current world.
 timestep = int(robot.getBasicTimeStep())
 
-#positions of obstacles 
-rubber_duck1 = (0.07, 0.01, 0.95)
-rubber_duck2 = (0.79, 0.01, -0.03)
-rubber_duck3 = (-0.150001, 0.01, 0.58)
-soda_can = (-0.18, 0.06, -0.17)
+#positions of obstacles x y 
+rubber_duck1 = [0.07, 0.95] 
+rubber_duck2 = [0.79, -0.03]
+rubber_duck3 = [-0.150001, 0.58]
+soda_can = [-0.18, -0.17]
+targets = [rubber_duck1, rubber_duck2, rubber_duck3, soda_can]
 
 # Robot Pose Values
 pose_x = 0
@@ -121,16 +122,18 @@ def get_wheel_speeds(target_pose):
     return phi_l_pct, phi_r_pct
     
 
-def visualize_2D_graph(state_bounds, line_segments, nodes, goal_point=None, filename=None):
+def visualize_2D_graph(state_bounds, line_segments, nodes, targets, goal_point=None, filename=None):
     fig = plt.figure()
     plt.xlim(state_bounds[0,0], state_bounds[0,1])
     plt.ylim(state_bounds[1,0], state_bounds[1,1])
     t = 1.5
-
+    for targ in targets:
+        x,y = targ[0]+0.25,targ[1]+0.25
+        plt.plot(x, 1.5-y, 'kX', markersize=15)
+        
     for seg in line_segments:
         [x1,y1], [x2,y2] = seg
         plt.plot([x1,x2], [t-y1,t-y2], marker = 'o')
-
     goal_node = None
     for node in nodes:
         if node.parent is not None:
@@ -306,13 +309,12 @@ def get_nearest_vertex(node_list, q_point):
 
 
 def main():
-    global OBSTACLES, LINE_SEGMENTS
+    global OBSTACLES, LINE_SEGMENTS, targets
     # You should insert a getDevice-like function in order to get the
     # instance of a device of the robot. Something like:
     #  motor = robot.getMotor('motorname')
     #  ds = robot.getDistanceSensor('dsname')
     #  ds.enable(timestep)2
-    
     K = 150 # adjustable
     start_pose = supervisor.supervisor_get_robot_pose()[:2]
     start_pose+=.25
@@ -333,7 +335,6 @@ def main():
     # while path[g] != None:
         # print(path[g].point)
         # g = path[g]
-        
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
