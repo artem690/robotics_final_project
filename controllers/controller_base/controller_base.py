@@ -52,6 +52,13 @@ OBSTACLES = np.array(supervisor.supervisor_get_obstacle_positions())
 OBSTACLES = list(map(lambda x: [x[0]+0.25,x[1],x[2]], OBSTACLES))
 LINE_SEGMENTS = []
 
+#distance sensor initialization
+ps = []
+psNames = ['ps0', 'ps1', 'ps2', 'ps3','ps4', 'ps5', 'ps6', 'ps7']
+for i in range(8):
+    ps.append(robot.getDistanceSensor(psNames[i]))
+    ps[i].enable(timestep)
+
 def update_odometry(left_wheel_direction, right_wheel_direction, time_elapsed):
   
     global pose_x, pose_y, pose_theta, EPUCK_MAX_WHEEL_SPEED, EPUCK_AXLE_DIAMETER
@@ -296,7 +303,13 @@ def get_valid_connect(node_list, q_point):
     else:
         return -1
     
+def get_sensor_data():
+    global ps
 
+    psValues = []
+    for i in range(8):
+        psValues.append(ps[i].getValue())
+    return psValues
 
 
 
@@ -322,12 +335,19 @@ def main():
     # while path[g] != None:
         # print(path[g].point)
         # g = path[g]
+    pose_x, pose_y, pose_theta = start_pose
+    last_odometry_update_time = None
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
+        if last_odometry_update_time is None:
+            last_odometry_update_time = robot.getTime()
+        time_elapsed = robot.getTime() - last_odometry_update_time
+        update_odometry(left_wheel_direction, right_wheel_direction, time_elapsed)
+        last_odometry_update_time = robot.getTime()
         # Read the sensors:
         # Enter here functions to read sensor data, like:
-        #  val = ds.getValue()
+        dist_val=get_sensor_data()
     
         # Process sensor data here.
     
