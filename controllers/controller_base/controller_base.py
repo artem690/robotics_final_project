@@ -6,6 +6,7 @@ import supervisor
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import sys
 
 
 class Node:
@@ -219,10 +220,10 @@ def get_random_vertex(bounds, obstacles):
         vertex = np.random.rand(bounds.shape[0]) * (bounds[:,1]-bounds[:,0]) + bounds[:,0]
     return vertex    
     
-    
-def buildRRT(state_bounds, obstacles, state_is_valid, starting_point, goal_point, k, delta_q):
+
+def build_rrt(state_bounds, obstacles, state_is_valid, starting_point, goal_point, k, delta_q):
     node_list = []
-    node_list.append(Node(starting_point, parent=None)) # Add Node at starting point with no parent
+    node_list.append(starting_point) # Add Node at starting point with no parent
 
     for i in range(k):
         q_rand = get_random_vertex(state_bounds, obstacles)
@@ -241,6 +242,69 @@ def buildRRT(state_bounds, obstacles, state_is_valid, starting_point, goal_point
 
     return node_list
 
+
+def get_neighbors(node_list, cur_node):
+    neighbors = []
+    for node in node_list:
+        if node.parent == cur_node:
+            neighbors.append(node)
+            
+    neighbors.append(cur_node.parent)
+    
+    return neighbors
+    
+
+def get_path(node_list, start_node):
+    goals = supervisor.supervisor_get_targets()
+    goal_node = None
+    open_list = [start_node]
+    closed_list = []
+    costs = {start_node:0}
+    path = {start_node:None}
+    for ix,goal in enumerate(goals):
+        goal_parent = get_nearest_vertex(node_list, goal)
+        goal_node = Node(goal, parent=goal_parent, path_from_parent=[goal_parent, goal])
+        node_list.append(goal_node)
+        goals[ix] = goal_node
+    
+    cur_node = start_node
+    while len(open_list) != 0:
+        neighbors = get_neighbors(node_list, cur_node)
+        
+        for neighbor in neighbors:
+            if neighbor in closed_list:
+                continue
+            elif neighbor not in open_list:
+                path[neighbor] = cur_node
+                costs[neighbor] = costs[cur_node] + 1
+                open_list.append(neighbor)
+            elif costs[neighbor] < costs[cur_node] + 1:
+                costs[neighbor] = costs[cur_node] + 1
+                path[neighbor] = cur_node
+            
+        closed_list.append(cur_node)
+        open_list.remove(cur_node)
+        open_list = [x for x in open_list if x]
+        
+        min_val = 99999
+        for open_node in open_list:
+            if costs[open_node] < min_val:
+                min_val = costs[open_node]
+                cur_node = open_node
+                
+    return path, goals
+            
+        
+
+def get_nearest_vertex(node_list, q_point):
+    filtered_node_list = [x.point for x in node_list]
+
+    # retrieve minimum distance index
+    index = np.argmin(np.linalg.norm(filtered_node_list-np.array(q_point), axis=1))
+
+    return node_list[index]
+
+
 def main():
     global OBSTACLES, LINE_SEGMENTS
     # You should insert a getDevice-like function in order to get the
@@ -252,12 +316,24 @@ def main():
     K = 150 # adjustable
     start_pose = supervisor.supervisor_get_robot_pose()[:2]
     start_pose+=.25
-
+    starting_point = Node(start_pose[:2], parent=None)
     obsTransform(OBSTACLES)
-    nodes = buildRRT(MAP_BOUNDS, OBSTACLES, state_is_valid, start_pose[:2], None, K, np.linalg.norm(MAP_BOUNDS/20.))
-    visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, nodes, None, 'rrt_maze_run.png')
+    node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, np.linalg.norm(MAP_BOUNDS/20.))
+    visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, None, 'rrt_maze_run.png')
     # pose_x, pose_y, pose_theta = start_pose
-    
+    path, goals = get_path(node_list, starting_point)
+    print("***", path)    
+    print("$$$", goals)
+    g = goals[-1]
+    while g:
+        print(g.point)
+        g = path[g]
+    # print(goals[-1].point)
+    # g = goals[-1]
+    # while path[g] != None:
+        # print(path[g].point)
+        # g = path[g]
+        
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
