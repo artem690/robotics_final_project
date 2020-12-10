@@ -68,19 +68,20 @@ def get_bounded_theta(theta):
     while theta > math.pi: theta -= 2.*math.pi
     while theta < -math.pi: theta += 2.*math.pi
     return theta
+    
 
 def get_wheel_speeds(target_pose):
     
     global pose_x, pose_y, pose_theta, left_wheel_direction, right_wheel_direction
 
     pose_x, pose_y, pose_theta = supervisor.supervisor_get_robot_pose()
-
+    pose_y = 1.5 - pose_y
 
     bearing_error = math.atan2( (target_pose[1] - pose_y), (target_pose[0] - pose_x) ) - pose_theta
     distance_error = np.linalg.norm(target_pose[:2] - np.array([pose_x,pose_y]))
     heading_error = target_pose[2] -  pose_theta
 
-    BEAR_THRESHOLD = 0.06
+    BEAR_THRESHOLD = 0.03
     DIST_THRESHOLD = 0.03
     dT_gain = theta_gain
     dX_gain = distance_gain
@@ -94,7 +95,7 @@ def get_wheel_speeds(target_pose):
 
     dTheta *= dT_gain
     dX = dX_gain * min(3.14159, distance_error)
-
+    
     phi_l = (dX - (dTheta*EPUCK_AXLE_DIAMETER/2.)) / EPUCK_WHEEL_RADIUS
     phi_r = (dX + (dTheta*EPUCK_AXLE_DIAMETER/2.)) / EPUCK_WHEEL_RADIUS
 
@@ -364,39 +365,23 @@ def main():
         if state == 'get_path':
             paths, goals = get_path(node_list, starting_point)
             path = visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
-            #print(path)
             state = 'get_waypoint'
             
         elif state == 'get_waypoint':
-            # my_target = list(transform_map_coord_world_coord(arr)) + [bearing_error]
-            # paths.pop(0) 
-           
             my_target = path[current_node]
             current_node = my_target
-            print(my_target.point, "fnsdjgnfskjngfksngsdjng")
-            x,y = my_target.point
-            theta = math.atan(x/y) #make changes 
-            # for t in my_target:
-                # x,y = t[0].point, t[1].point
-                # thetaa = math.atan(x/y) 
-                
+            x,y = np.array(my_target.point) - .25
+            theta = np.arctan(y/x)
             state = 'move'
             
         elif state == 'move':
-            # pass
-            lspeed, rspeed = get_wheel_speeds([x,y,theta]) 
-            #print(lspeed, rspeed)
-            # leftMotor.setVelocity(leftMotor.getMaxVelocity())
-            # rightMotor.setVelocity(rightMotor.getMaxVelocity())
+            lspeed, rspeed = get_wheel_speeds([x,1.5-y,theta]) 
             leftMotor.setVelocity(lspeed)
             rightMotor.setVelocity(rspeed) 
             
-            cur_pos = supervisor.supervisor_get_robot_pose()
-            print(cur_pos, "qqqqqqqqqqqqqqqqqqqqqqqqq")
-            print(x, "XXXXXXXXXXXX", y, "YYYYYYYYYYYYY", theta, "THEETAAAAAAAAAAAAAAA")
-            w = np.linalg.norm(np.array(cur_pos) - np.array([x,y,theta]))
-            if w < 0.5:
-                print("GOT IT")
+            cur_pos = np.array(supervisor.supervisor_get_robot_pose()[:2])
+            dist = np.linalg.norm(np.array(cur_pos[0:2:1]) - np.array([x,y]))
+            if dist < 0.035:
                 state = 'get_waypoint'
             # use supervisor to get curr position 
             # w = npling(np.array(currposition) - np.array([x,y])
