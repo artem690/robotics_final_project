@@ -295,35 +295,11 @@ def get_valid_connect(node_list, q_point):
         return node_list[valid_indices[index]]
     else:
         return -1
-    
-
-def go_around(which_side, source, dest):
-    # returns left, right motor speed to go around obstacle
-    reduce, increase = 0.95, 1.05
-    if which_side == "left":
-        # obstacle on left
-        l_mult, r_mult = l_mult*reduce, r_mult*increase
-        l_mult, r_mult = 1 if l_mult>1 else l_mult, \
-                         1 if r_mult>1 else r_mult
-    else:
-        l_mult, r_mult = l_mult*increase, r_mult*reduce
-        l_mult, r_mult = 1 if l_mult>1 else l_mult, \
-                         1 if r_mult>1 else r_mult
-    
-    
-    robo_pose = supervisor.supervisor_get_robot_pose()[:2]
-    slope = (dest[1]-source[1]) / (dest[0]-source[0])
-    
-    if slope * robo_pose[0] == robo_pose[1]: 
-        # robot has returned to path
-        return 1,1
-
-    return l_mult * 6, \
-           r_mult * 6
 
 
 def main():
     global OBSTACLES, LINE_SEGMENTS
+    l_mult, r_mult = None, None
     # You should insert a getDevice-like function in order to get the
     # instance of a device of the robot. Something like:
     #  motor = robot.getMotor('motorname')
@@ -346,7 +322,6 @@ def main():
         # g = path[g]
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
-    l_mult, r_mult = 1,0.1
     while robot.step(timestep) != -1:
         # Read the sensors:
         # Enter here functions to read sensor data, like:
@@ -355,6 +330,38 @@ def main():
     
         # Enter here functions to send actuator commands, like:
         #  motor.setPosition(10.0)
+        if state[-8:] == "obstacle":
+            reduce, increase = 0.95, 1.05
+            
+            if state == "left_obstacle":
+            
+                if not l_mult and not r_mult:
+                    l_mult, r_mult = 1., 0.1
+                
+                l_mult, r_mult = l_mult*reduce, r_mult*increase
+                l_mult, r_mult = 1 if l_mult>1 else l_mult, \
+                                 1 if r_mult>1 else r_mult
+                
+            
+            elif state == "right_obstacle":
+            
+                if not l_mult and not r_mult:
+                    l_mult, r_mult = 0.1, 1.
+            
+                l_mult, r_mult = l_mult*increase, r_mult*reduce
+                l_mult, r_mult = 1 if l_mult>1 else l_mult, \
+                                     1 if r_mult>1 else r_mult
+                                     
+            robo_pose = supervisor.supervisor_get_robot_pose()[:2]
+            slope = (dest[1]-source[1]) / (dest[0]-source[0])
+            
+            if slope * robo_pose[0] == robo_pose[1]: 
+                # robot has returned to path, reset
+                l_mult, r_mult = None, None
+                return 1,1
+                
+            leftMotor.setVelocity(leftMotor.getMaxVelocity() * l_mult)
+            rightMotor.setVelocity(rightMotor.getMaxVelocity() * r_mult)
         break
     # Enter here exit cleanup code.  
     print("BYE")  
