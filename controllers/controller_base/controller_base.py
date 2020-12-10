@@ -296,7 +296,23 @@ def get_valid_connect(node_list, q_point):
     else:
         return -1
 
+####################################### obstacle detection ###################################################
+def detect_obstacle(psValues):
+    global state
+    
+    front_obstacle = psValues[0] > 80.0 or psValues[7] > 80.0    
+    right_obstacle = psValues[3] > 80.0 or psValues[1] > 80.0 or psValues[2] > 80.0
+    left_obstacle = psValues[5] > 80.0 or psValues[6] > 80.0 or psValues[4] >80.0
 
+    if front_obstacle:
+        state="obstacle"
+        
+        if left_obstacle:
+            state=("left_obstacle")
+            
+        elif right_obstacle:
+            state="right_obstacle" 
+    return
 def main():
     global OBSTACLES, LINE_SEGMENTS
     l_mult, r_mult = None, None
