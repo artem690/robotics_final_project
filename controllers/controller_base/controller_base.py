@@ -312,21 +312,18 @@ def get_sensor_data():
     return psValues
 
 def detect_obstacle(psValues):
-    #no front obstacle
-    if psValues[0]<80 and psValues[7]<80:
-        #move forward
-        leftMotor.setVelocity(EPUCK_MAX_WHEEL_SPEED)
-        rightMotor.setVelocity(EPUCK_MAX_WHEEL_SPEED)
-    #front and left obstacle
-    elif psValues[0]>80 or psValues[7]>80 and psValues[5]>80:
-        #move right
-        leftMotor.setVelocity(EPUCK_MAX_WHEEL_SPEED)
-        rightMotor.setVelocity(0)   
-    #front and right obstacle 
-    elif psValues[0]>80 or psValues[7]>80 and psValues[2]>80:
-        #move left
-        leftMotor.setVelocity(0)
-        rightMotor.setVelocity(EPUCK_MAX_WHEEL_SPEED) 
+    front_obstacle = psValues[0] > 80.0 or psValues[7] > 80.0    
+    right_obstacle = psValues[3] > 80.0 or psValues[1] > 80.0 or psValues[2] > 80.0
+    left_obstacle = psValues[5] > 80.0 or psValues[6] > 80.0 or psValues[4] >80.0
+
+    if front_obstacle:
+        state="obstacle"
+        
+        if left_obstacle:
+            state=("left_obstacle")
+            
+        elif right_obstacle:
+            state="right_obstacle" 
     return
 
 
