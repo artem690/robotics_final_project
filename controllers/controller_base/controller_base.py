@@ -26,6 +26,9 @@ timestep = int(robot.getBasicTimeStep())
 #positions of obstacles x y 
 TARGETS = supervisor.supervisor_get_targets()
 
+state= 'get_path'
+theta_gain = 1.0
+distance_gain = 0.3
 # Robot Pose Values
 pose_x = 0
 pose_y = 0
@@ -70,7 +73,7 @@ def get_wheel_speeds(target_pose):
     
     global pose_x, pose_y, pose_theta, left_wheel_direction, right_wheel_direction
 
-    pose_x, pose_y, pose_theta = csci3302_lab5_supervisor.supervisor_get_robot_pose()
+    pose_x, pose_y, pose_theta = supervisor.supervisor_get_robot_pose()
 
 
     bearing_error = math.atan2( (target_pose[1] - pose_y), (target_pose[0] - pose_x) ) - pose_theta
@@ -125,6 +128,7 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filenam
     plt.ylim(state_bounds[1,0], state_bounds[1,1])
     t = 1.5
     goal_point=None
+    pathsss = {}
     
     for targ in TARGETS:
         x,y = targ[0],targ[1]
@@ -153,6 +157,7 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filenam
                 if cur_node.parent is not None:
                     node_path = np.array(cur_node.path_from_parent)
                     plt.plot(node_path[:,0], t - node_path[:,1], '--y')
+                    pathsss[cur_node.parent] = cur_node
                 
                 if cur_node in paths:
                     cur_node = paths[cur_node]
@@ -168,6 +173,7 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filenam
     else:
         plt.show()    
     
+    return pathsss
     
 def obsTransform(obstacles):
     global LINE_SEGMENTS
@@ -298,7 +304,7 @@ def get_valid_connect(node_list, q_point):
 
 
 def main():
-    global OBSTACLES, LINE_SEGMENTS
+    global OBSTACLES, LINE_SEGMENTS, state
     l_mult, r_mult = None, None
     # You should insert a getDevice-like function in order to get the
     # instance of a device of the robot. Something like:
@@ -311,15 +317,27 @@ def main():
     starting_point = Node(start_pose[:2], parent=None)
     obsTransform(OBSTACLES)
     node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, np.linalg.norm(MAP_BOUNDS/20.))
+    print(starting_point, "HERE IS STARTING POINT")
+    current_node = starting_point
     # pose_x, pose_y, pose_theta = start_pose
-    paths, goals = get_path(node_list, starting_point)
+    # paths, goals = get_path(node_list, starting_point)
     
-    visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
+    # visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
     # print(goals[-1].point)
     # g = goals[-1]
-    # while path[g] != None:
-        # print(path[g].point)
-        # g = path[g]
+    # while paths[g] != None:
+        # print(paths[g].point)
+        # g = paths[g]
+        
+    # Main loop:
+    # - perform simulation steps until Webots is stopping the controller
+    
+    for t in TARGETS:
+        x,y = t[0], t[1]
+        #pcalculating theta for each goal so we can use get_wheels_speeds
+        thetaa = math.atan(x/y) # maybe change 
+        # print(thetaa, "----")
+        print(math.atan(1.12/0.92))
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
@@ -327,42 +345,85 @@ def main():
         # Enter here functions to read sensor data, like:
         #  val = ds.getValue()
         # Process sensor data here.
+        if state == 'get_path':
+            paths, goals = get_path(node_list, starting_point)
+            path = visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
+            #print(path)
+            state = 'get_waypoint'
+            
+        elif state == 'get_waypoint':
+            # my_target = list(transform_map_coord_world_coord(arr)) + [bearing_error]
+            # paths.pop(0) 
+           
+            my_target = path[current_node]
+            current_node = my_target
+            print(my_target.point, "fnsdjgnfskjngfksngsdjng")
+            x,y = my_target.point
+            theta = math.atan(x/y) #make changes 
+            # for t in my_target:
+                # x,y = t[0].point, t[1].point
+                # thetaa = math.atan(x/y) 
+                
+            state = 'move'
+            
+        elif state == 'move':
+            # pass
+            lspeed, rspeed = get_wheel_speeds([x,y,theta]) 
+            #print(lspeed, rspeed)
+            # leftMotor.setVelocity(leftMotor.getMaxVelocity())
+            # rightMotor.setVelocity(rightMotor.getMaxVelocity())
+            leftMotor.setVelocity(lspeed)
+            rightMotor.setVelocity(rspeed) 
+            
+            cur_pos = supervisor.supervisor_get_robot_pose()
+            print(cur_pos, "qqqqqqqqqqqqqqqqqqqqqqqqq")
+            print(x, "XXXXXXXXXXXX", y, "YYYYYYYYYYYYY", theta, "THEETAAAAAAAAAAAAAAA")
+            w = np.linalg.norm(np.array(cur_pos) - np.array([x,y,theta]))
+            if w < 0.5:
+                print("GOT IT")
+                state = 'get_waypoint'
+            # use supervisor to get curr position 
+            # w = npling(np.array(currposition) - np.array([x,y])
+            # dist =  w 
+            # if w < 0.5 then change state to get waypoit
     
         # Enter here functions to send actuator commands, like:
         #  motor.setPosition(10.0)
-        if state[-8:] == "obstacle":
-            reduce, increase = 0.95, 1.05
+        
+        
+        # if state[-8:] == "obstacle":
+            # reduce, increase = 0.95, 1.05
             
-            if state == "left_obstacle":
+            # if state == "left_obstacle":
             
-                if not l_mult and not r_mult:
-                    l_mult, r_mult = 1., 0.1
+                # if not l_mult and not r_mult:
+                    # l_mult, r_mult = 1., 0.1
                 
-                l_mult, r_mult = l_mult*reduce, r_mult*increase
-                l_mult, r_mult = 1 if l_mult>1 else l_mult, \
-                                 1 if r_mult>1 else r_mult
+                # l_mult, r_mult = l_mult*reduce, r_mult*increase
+                # l_mult, r_mult = 1 if l_mult>1 else l_mult, \
+                                 # 1 if r_mult>1 else r_mult
                 
             
-            elif state == "right_obstacle":
+            # elif state == "right_obstacle":
             
-                if not l_mult and not r_mult:
-                    l_mult, r_mult = 0.1, 1.
+                # if not l_mult and not r_mult:
+                    # l_mult, r_mult = 0.1, 1.
             
-                l_mult, r_mult = l_mult*increase, r_mult*reduce
-                l_mult, r_mult = 1 if l_mult>1 else l_mult, \
-                                     1 if r_mult>1 else r_mult
+                # l_mult, r_mult = l_mult*increase, r_mult*reduce
+                # l_mult, r_mult = 1 if l_mult>1 else l_mult, \
+                                     # 1 if r_mult>1 else r_mult
                                      
-            robo_pose = supervisor.supervisor_get_robot_pose()[:2]
-            slope = (dest[1]-source[1]) / (dest[0]-source[0])
+            # robo_pose = supervisor.supervisor_get_robot_pose()[:2]
+            # slope = (dest[1]-source[1]) / (dest[0]-source[0])
             
-            if slope * robo_pose[0] == robo_pose[1]: 
-                # robot has returned to path, reset
-                l_mult, r_mult = None, None
-                return 1,1
+            # if slope * robo_pose[0] == robo_pose[1]: 
+                ##robot has returned to path, reset
+                # l_mult, r_mult = None, None
+                # return 1,1
                 
-            leftMotor.setVelocity(leftMotor.getMaxVelocity() * l_mult)
-            rightMotor.setVelocity(rightMotor.getMaxVelocity() * r_mult)
-        break
+            # leftMotor.setVelocity(leftMotor.getMaxVelocity() * l_mult)
+            # rightMotor.setVelocity(rightMotor.getMaxVelocity() * r_mult)
+        #break
     # Enter here exit cleanup code.  
     print("BYE")  
     
