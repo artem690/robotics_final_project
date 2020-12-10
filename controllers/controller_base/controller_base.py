@@ -311,20 +311,34 @@ def get_sensor_data():
         psValues.append(ps[i].getValue())
     return psValues
 
-def detect_obstacle(psValues):
-    front_obstacle = psValues[0] > 80.0 or psValues[7] > 80.0    
-    right_obstacle = psValues[3] > 80.0 or psValues[1] > 80.0 or psValues[2] > 80.0
-    left_obstacle = psValues[5] > 80.0 or psValues[6] > 80.0 or psValues[4] >80.0
-
-    if front_obstacle:
-        state="obstacle"
+def has_obstacle(psValues):
+    global state
+    left_obstacle=psValues[5]>80.0 or psValues[6]>80.0 or psValues[7]>80.0
+    right_obstacle=psValues[0]>80.0 or psValues[1]>80.0 or psValues[2]>80.0
+       
+    if left_obstacle:
+        state="left_obstacle"
         
-        if left_obstacle:
-            state=("left_obstacle")
-            
-        elif right_obstacle:
-            state="right_obstacle" 
+    elif right_obstacle:
+       state="right_obstacle"
+        
+    else:
+        state="No Obstacle"
     return
+
+#determine if we have moved enough to avoid obstacle
+def isObstacleAvoided(psValues):
+#prev_state is set to equal state right before call to has_obstacle
+    if state=="No Obstacle" and prev_state=="left_obstacle" or prev_state=="right_obstacle":
+        leftMotor.setVelocity(0)
+        rightMotor.setVelocity(0)
+        return true
+    else:
+       return False
+
+def reconnect_to_path():
+#move robot from current position to the oroginal point
+#on path before obstacle avoidance happened
 
 
 def main():
