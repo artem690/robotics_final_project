@@ -26,6 +26,7 @@ timestep = int(robot.getBasicTimeStep())
 #positions of obstacles x y 
 TARGETS = supervisor.supervisor_get_targets()
 
+state = 'get_path'
 # Robot Pose Values
 pose_x = 0
 pose_y = 0
@@ -33,6 +34,10 @@ pose_theta = 0
 left_wheel_direction = 0
 right_wheel_direction = 0
 
+
+
+theta_gain = 1.0
+distance_gain = 0.3
 EPUCK_MAX_WHEEL_SPEED = 0.12880519 # m/s
 EPUCK_AXLE_DIAMETER = 0.053 # ePuck's wheels are 53mm apart.
 EPUCK_WHEEL_RADIUS = 0.0205 # ePuck's wheels are 0.041m in diameter.
@@ -51,6 +56,11 @@ MAP_BOUNDS = np.array([[0,1.5],[0,1.5]])
 OBSTACLES = np.array(supervisor.supervisor_get_obstacle_positions())
 OBSTACLES = list(map(lambda x: [x[0]+0.25,x[1],x[2]], OBSTACLES))
 LINE_SEGMENTS = []
+
+CELL_RESOLUTIONS = np.array([0.1, 0.1]) # 10cm per cell
+NUM_X_CELLS = int(MAP_BOUNDS[0] / CELL_RESOLUTIONS[0])
+NUM_Y_CELLS = int(MAP_BOUNDS[1] / CELL_RESOLUTIONS[1])
+world_map = np.zeros([NUM_Y_CELLS,NUM_X_CELLS])
 
 def update_odometry(left_wheel_direction, right_wheel_direction, time_elapsed):
   
@@ -116,7 +126,27 @@ def get_wheel_speeds(target_pose):
     # print("Current pose: [%5f, %5f, %5f]\t\t Target pose: [%5f, %5f, %5f]\t\t %5f %5f %5f\t\t  %3f %3f" % (pose_x, pose_y, pose_theta, target_pose[0], target_pose[1], target_pose[2], bearing_error, distance_error, get_bounded_theta(heading_error), left_wheel_direction, right_wheel_direction))
    
     return phi_l_pct, phi_r_pct
+   
+def transform_world_coord_to_map_coord(world_coord):
+    """
+    @param world_coord: Tuple of (x,y) position in world coordinates
+    @return grid_coord: Tuple of (i,j) coordinates corresponding to grid row (y-coord) and column (x-coord) in our map
+    """
+    col, row = np.array(world_coord) / CELL_RESOLUTIONS
+    if row < 0 or col < 0 or row >= NUM_Y_CELLS or col >= NUM_X_CELLS:
+        return None
+    return tuple(np.array([row, col]).astype(int))
     
+    
+def transform_map_coord_world_coord(map_coord):
+    """
+    @param map_coord: Tuple of (i,j) coordinates corresponding to grid column and row in our map
+    @return world_coord: Tuple of (x,y) position corresponding to the center of map_coord, in world coordinates
+    """
+    row, col = map_coord
+    if row < 0 or col < 0 or row >= NUM_Y_CELLS or col >= NUM_X_CELLS:
+        return None
+    return np.array([(col+0.5)*CELL_RESOLUTIONS[1], (row+0.5)*CELL_RESOLUTIONS[0]])
 
 def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filename=None):
     global TARGETS
@@ -301,7 +331,8 @@ def get_valid_connect(node_list, q_point):
 
 
 def main():
-    global OBSTACLES, LINE_SEGMENTS
+    global OBSTACLES, LINE_SEGMENTS, state, TARGETS
+    global bearing_error
     # You should insert a getDevice-like function in order to get the
     # instance of a device of the robot. Something like:
     #  motor = robot.getMotor('motorname')
@@ -314,29 +345,53 @@ def main():
     obsTransform(OBSTACLES)
     node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, np.linalg.norm(MAP_BOUNDS/20.))
     # pose_x, pose_y, pose_theta = start_pose
-    paths, goals = get_path(node_list, starting_point)
+    # paths, goals = get_path(node_list, starting_point)
     
-    visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
+    # visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
     # print(goals[-1].point)
     # g = goals[-1]
-    # while path[g] != None:
-        # print(path[g].point)
-        # g = path[g]
+    # while paths[g] != None:
+        # print(paths[g].point)
+        # g = paths[g]
+        
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
+    
+    for t in TARGETS:
+        x,y = t[0], t[1]
+        #pcalculating theta for each goal so we can use get_wheels_speeds
+        thetaa = math.tan(y/x)
+        print(thetaa, "----")
+        
     while robot.step(timestep) != -1:
         # Read the sensors:
         # Enter here functions to read sensor data, like:
         #  val = ds.getValue()
-    
+        arr = [0.32, 1.2] # value of one of the target (x,y,theta) just to test 
         # Process sensor data here.
-    
+        if state == 'get_path':
+            paths, goals = get_path(node_list, starting_point)
+            visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
+            state = 'get_waypoint'
+            
+        elif state == 'get_waypoint':
+            my_target = list(transform_map_coord_world_coord(arr)) + [bearing_error]
+            path.pop(0) 
+            state = 'move'
+        elif state == 'move':
+            # pass
+            lspeed, rspeed = get_wheel_speeds(my_target)
+            # leftMotor.setVelocity(leftMotor.getMaxVelocity())
+            # rightMotor.setVelocity(rightMotor.getMaxVelocity())
+            leftMotor.setVelocity(lspeed)
+            rightMotor.setVelocity(rspeed) 
         # Enter here functions to send actuator commands, like:
         #  motor.setPosition(10.0)
-        break
+        #break
     
     # Enter here exit cleanup code.  
     print("BYE")  
+    
     
 
 
