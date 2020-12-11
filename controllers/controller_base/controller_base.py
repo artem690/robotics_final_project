@@ -53,6 +53,12 @@ MAX_VEL_REDUCTION = 0.25
 MAP_BOUNDS = np.array([[0,1.5],[0,1.5]])
 OBSTACLES = np.array(supervisor.supervisor_get_obstacle_positions())
 OBSTACLES = list(map(lambda x: [x[0]+0.25,x[1],x[2]], OBSTACLES))
+
+test=np.array(supervisor.supervisor_get_targets()) # find positions of objects
+print("ITEMS =")
+print(test)
+print(" ")
+
 LINE_SEGMENTS = []
 
 def update_odometry(left_wheel_direction, right_wheel_direction, time_elapsed):
@@ -136,7 +142,7 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, paths, filename=None)
     
     for targ in goals:
         x,y = targ[0],targ[1]
-        plt.plot(x, t-y, 'kX', markersize=10)
+        plt.plot(x, t-y, 'kx', markersize=10)
         
     for seg in line_segments:
         [x1,y1], [x2,y2] = seg
