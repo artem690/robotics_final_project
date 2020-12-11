@@ -10,7 +10,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 1 0 0 4.71238898038469
-  position 0.36876696762848715 2.7481146204344467 0.37512044501136943
+  position 0.7018399992169487 3.6785716733984315 0.24342598872248322
   follow "e-puck"
 }
 TexturedBackground {
@@ -64,7 +64,7 @@ DEF obstacle MazeBlock {
   length 0.212
 }
 DEF obstacle MazeBlock {
-  translation 0.085 0 1.04
+  translation 0.0847 0 1.04
   rotation 0 1 0 -3.1415853071795863
   name "maze block(7)"
   length 0.199
@@ -194,60 +194,239 @@ DEF EPUCK E-puck {
   ]
 }
 Solid {
-  translation 0.98 0.03 0.56
-  scale 0.605279 0.605279 0.605279
+  translation 0.99 0.03 0.56
+  scale 0.579431 0.579431 0.579431
   boundingObject Box {
-    size 0.03 0.1 0.95
+    size 0.001 0.1 0.95
   }
 }
 Solid {
-  translation 0.59 0.03 0.84
+  translation 0.59 0.03 0.85
   rotation 0 1 0 1.5708
   scale 0.605279 0.605279 0.605279
   name "solid(6)"
   boundingObject Box {
-    size 0.03 0.1 1.29
+    size 0.001 0.1 1.29
   }
 }
 Solid {
-  translation 0.79 0.03 1.15
+  translation 0.8 0.03 1.15
   scale 0.613049 0.613049 0.613049
   name "solid(1)"
   boundingObject Box {
-    size 0.03 0.1 0.31
+    size 0.001 0.1 0.31
   }
 }
 Solid {
-  translation 0.43 0.03 1.15
+  translation 0.44 0.03 1.15
   scale 0.613049 0.613049 0.613049
   name "solid(2)"
   boundingObject Box {
-    size 0.03 0.1 0.31
+    size 0.001 0.1 0.31
   }
 }
 Solid {
-  translation 0.19 0.03 0.94
+  translation 0.64 0.03 1.05
+  scale 0.613049 0.613049 0.613049
+  name "solid(8)"
+  boundingObject Box {
+    size 0.001 0.1 0.03
+  }
+}
+Solid {
+  translation 0.18 0.03 0.93
   scale 0.613049 0.613049 0.613049
   name "solid(3)"
   boundingObject Box {
-    size 0.03 0.1 0.34
+    size 0.001 0.1 0.34
   }
 }
 Solid {
-  translation 0.09 0.03 1.04
+  translation 0.08 0.03 1.03
   rotation 0 1 0 1.5708
   scale 0.613049 0.613049 0.613049
   name "solid(4)"
   boundingObject Box {
-    size 0.03 0.1 0.34
+    size 0.001 0.1 0.34
   }
 }
 Solid {
-  translation 0.84 0.03 1.05
+  translation 0.509999 0.03 0.67
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(9)"
+  boundingObject Box {
+    size 0.001 0.1 0.34
+  }
+}
+Solid {
+  translation 0.389999 0.03 0.74
+  rotation 0 1 0 -3.1415853071795863
+  scale 0.613049 0.613049 0.613049
+  name "solid(10)"
+  boundingObject Box {
+    size 0.001 0.1 0.21
+  }
+}
+Solid {
+  translation 0.149999 0.03 0.55
+  rotation 0 1 0 -3.1415853071795863
+  scale 0.613049 0.613049 0.613049
+  name "solid(14)"
+  boundingObject Box {
+    size 0.001 0.1 0.29
+  }
+}
+Solid {
+  translation 0.09 0.03 1.05
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(7)"
+  boundingObject Box {
+    size 0.001 0.1 0.34
+  }
+}
+Solid {
+  translation 0.84 0.03 1.04
   rotation 0 1 0 1.5708
   scale 0.613049 0.613049 0.613049
   name "solid(5)"
   boundingObject Box {
-    size 0.03 0.1 0.66
+    size 0.001 0.1 0.66
+  }
+}
+Solid {
+  translation -0.0500006 0.03 0.65
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(11)"
+  boundingObject Box {
+    size 0.001 0.1 0.66
+  }
+}
+Solid {
+  translation -0.100001 0.03 0.25
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(15)"
+  boundingObject Box {
+    size 0.001 0.1 0.48
+  }
+}
+Solid {
+  translation -0.090001 0.03 0.229997
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(16)"
+  boundingObject Box {
+    size 0.001 0.1 0.48
+  }
+}
+Solid {
+  translation -0.050001 0.03 -0.030003
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(17)"
+  boundingObject Box {
+    size 0.001 0.1 0.63
+  }
+}
+Solid {
+  translation 0.349999 0.03 0.129995
+  rotation 0 1 0 -3.1415853071795863
+  scale 0.613049 0.613049 0.613049
+  name "solid(20)"
+  boundingObject Box {
+    size 0.001 0.1 0.35
+  }
+}
+Solid {
+  translation 0.369999 0.03 0.129995
+  rotation 0 1 0 -3.1415853071795863
+  scale 0.613049 0.613049 0.613049
+  name "solid(21)"
+  boundingObject Box {
+    size 0.001 0.1 0.35
+  }
+}
+Solid {
+  translation 0.869999 0.03 0.159994
+  rotation 0 -1 0 1.57079
+  scale 0.613049 0.613049 0.613049
+  name "solid(22)"
+  boundingObject Box {
+    size 0.001 0.1 0.35
+  }
+}
+Solid {
+  translation 0.869999 0.03 0.139994
+  rotation 0 -1 0 1.57079
+  scale 0.613049 0.613049 0.613049
+  name "solid(23)"
+  boundingObject Box {
+    size 0.001 0.1 0.35
+  }
+}
+Solid {
+  translation 0.599999 0.03 -0.010006
+  rotation 0 1 0 6.32196e-06
+  scale 0.613049 0.613049 0.613049
+  name "solid(24)"
+  boundingObject Box {
+    size 0.001 0.1 0.27
+  }
+}
+Solid {
+  translation 0.859999 0.03 -0.0800075
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(26)"
+  boundingObject Box {
+    size 0.001 0.1 0.75
+  }
+}
+Solid {
+  translation 0.679999 0.03 -0.180006
+  rotation 0 1 0 6.32196e-06
+  scale 0.613049 0.613049 0.613049
+  name "solid(25)"
+  boundingObject Box {
+    size 0.001 0.1 0.27
+  }
+}
+Solid {
+  translation 0.049999 0.03 -0.0100031
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(18)"
+  boundingObject Box {
+    size 0.001 0.1 0.34
+  }
+}
+Solid {
+  translation -0.160001 0.03 -0.0100029
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(19)"
+  boundingObject Box {
+    size 0.001 0.1 0.27
+  }
+}
+Solid {
+  translation 0.439999 0.03 0.45
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(12)"
+  boundingObject Box {
+    size 0.001 0.1 0.95
+  }
+}
+Solid {
+  translation 0.429999 0.03 0.43
+  rotation 0 1 0 1.5708
+  scale 0.613049 0.613049 0.613049
+  name "solid(13)"
+  boundingObject Box {
+    size 0.001 0.1 0.98
   }
 }
