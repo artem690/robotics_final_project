@@ -122,16 +122,19 @@ def get_wheel_speeds(target_pose):
     return phi_l_pct, phi_r_pct
     
 
-def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filename=None):
+def visualize_2D_graph(state_bounds, line_segments, nodes, paths, filename=None):
     global TARGETS
+    
+    goals = [[t.point[0],t.point[1]] for t in TARGETS]
+    
     fig = plt.figure()
     plt.xlim(state_bounds[0,0], state_bounds[0,1])
     plt.ylim(state_bounds[1,0], state_bounds[1,1])
     t = 1.5
     goal_point=None
-    pathsss = {}
+    path_set = {}
     
-    for targ in TARGETS:
+    for targ in goals:
         x,y = targ[0],targ[1]
         plt.plot(x, t-y, 'kX', markersize=10)
         
@@ -151,19 +154,22 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filenam
 
     plt.plot(nodes[0].point[0], t - nodes[0].point[1], 'ko')
     
-    if goals is not None:
-        for goal_node in goals:
-            cur_node = goal_node
-            while cur_node is not None:
-                if cur_node.parent is not None:
-                    node_path = np.array(cur_node.path_from_parent)
-                    plt.plot(node_path[:,0], t - node_path[:,1], '--y')
-                    pathsss[cur_node.parent] = cur_node
-                
-                if cur_node in paths:
-                    cur_node = paths[cur_node]
+    for goal_node in TARGETS:
+        cur_node = goal_node
+        while cur_node is not None:
+            if cur_node.parent is not None:
+                node_path = np.array(cur_node.path_from_parent)
+                plt.plot(node_path[:,0], t - node_path[:,1], '--y')
+                if cur_node.parent in path_set:
+                    path_set[cur_node.parent].append(cur_node)
+                    break
                 else:
-                    cur_node = None
+                    path_set[cur_node.parent] = [cur_node]
+            
+            if cur_node in paths:
+                cur_node = paths[cur_node]
+            else:
+                cur_node = None
 
     if goal_point is not None:
         plt.plot(goal_point[0], goal_point[1], 'gx')
@@ -174,7 +180,7 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filenam
     else:
         plt.show()    
     
-    return pathsss
+    return path_set
     
 def obsTransform(obstacles):
     global LINE_SEGMENTS
@@ -219,11 +225,17 @@ def state_is_valid(from_point, to_point):
         lx1, lx2, ly1, ly2 = min(lines[0][0], lines[1][0]), max(lines[0][0], lines[1][0]), \
                              min(lines[0][1], lines[1][1]), max(lines[0][1], lines[1][1])
         
-        # look for intersection on both line segments
+        np.sort(lines)
+        dist = np.min(np.linalg.norm(np.array(lines)-np.array([[x1,y1],[x2,y2]]), axis=1))
+        
+        # look for intersection on both line segments, (x,y) is intersection
         if x >= x1 and x <= x2 and y >= y1 and y <= y2 and \
            x >= lx1 and x <= lx2 and y >= ly1 and y <= ly2:
             return False
-    return True
+        elif dist < .1:
+            return False
+
+    return True 
     
     
 def get_random_vertex(bounds, obstacles):
@@ -257,21 +269,24 @@ def build_rrt(state_bounds, obstacles, state_is_valid, starting_point, goal_poin
 
 def get_path(node_list, start_node):
     global TARGETS
-    goals = TARGETS[:]
+
     visited = {start_node:None}
 
-    for ix,goal in enumerate(goals):
+    # add goals to node list and valid connection from RRT
+    for ix,goal in enumerate(TARGETS):
         goal_parent = get_valid_connect(node_list, goal)
         
         if goal_parent != -1:
             goal_node = Node(goal, parent=goal_parent, path_from_parent=[goal, goal_parent.point])
             node_list.append(goal_node)
-            goals[ix] = goal_node
+            TARGETS[ix] = goal_node
         else:
-            goals[ix] = None
+            TARGETS[ix] = None
 
-    goals = [g for g in goals if g] # remove None
-    for goal in goals:
+    TARGETS = [g for g in TARGETS if g] # remove None
+    
+    # trace back path from goal
+    for goal in TARGETS:
         cur_node = goal
         
         while cur_node:
@@ -279,7 +294,7 @@ def get_path(node_list, start_node):
             visited[cur_node] = cur_node.parent
             cur_node = cur_node.parent
             
-    return visited, goals
+    return visited
             
         
 def get_valid_connect(node_list, q_point):
@@ -320,112 +335,99 @@ def detect_obstacle(psValues):
         elif right_obstacle:
             state="right_obstacle" 
     return
+    
+    
 def main():
-    global OBSTACLES, LINE_SEGMENTS, state
-    l_mult, r_mult = None, None
-    # You should insert a getDevice-like function in order to get the
-    # instance of a device of the robot. Something like:
-    #  motor = robot.getMotor('motorname')
-    #  ds = robot.getDistanceSensor('dsname')
-    #  ds.enable(timestep)2
-    K = 500 # adjustable
+    global OBSTACLES, LINE_SEGMENTS, TARGETS, state
+    l_mult, r_mult, sub_state = None, None, "go_out"
+    K = 100 # adjustable k-val for number of random points
     start_pose = supervisor.supervisor_get_robot_pose()[:2]
     start_pose+=.25
     starting_point = Node(start_pose[:2], parent=None)
+    fork_node, dist = [], None
+    
     obsTransform(OBSTACLES)
-    node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, np.linalg.norm(MAP_BOUNDS/20.))
-    print(starting_point, "HERE IS STARTING POINT")
+    
+    # can change delta q (last param) to make lines longer/shorter
+    node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, .1)
     current_node = starting_point
-    # pose_x, pose_y, pose_theta = start_pose
-    # paths, goals = get_path(node_list, starting_point)
-    
-    # visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
-    # print(goals[-1].point)
-    # g = goals[-1]
-    # while paths[g] != None:
-        # print(paths[g].point)
-        # g = paths[g]
-        
-    # Main loop:
-    # - perform simulation steps until Webots is stopping the controller
-    
-    for t in TARGETS:
-        x,y = t[0], t[1]
-        #pcalculating theta for each goal so we can use get_wheels_speeds
-        thetaa = math.atan(x/y) # maybe change 
-        # print(thetaa, "----")
-        print(math.atan(1.12/0.92))
+
+    # plan path and set initial state
+    paths_from = get_path(node_list, starting_point)
+    paths_to = visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, paths_from, 'rrt_maze_run.png')
+    state = 'get_waypoint' 
+       
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
-        # Read the sensors:
-        # Enter here functions to read sensor data, like:
-        #  val = ds.getValue()
-        # Process sensor data here.
-        if state == 'get_path':
-            paths, goals = get_path(node_list, starting_point)
-            path = visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, goals, paths, 'rrt_maze_run.png')
-            state = 'get_waypoint'
             
-        elif state == 'get_waypoint':
-            my_target = path[current_node]
-            current_node = my_target
-            x,y = np.array(my_target.point) - .25
+        if state == 'get_waypoint':
+            ## get next node to go to
+            if len(paths_to) == 0: 
+                break # no goals were reached in RRT process (try to increase k-val)
+                
+            elif current_node in TARGETS and \
+                 current_node not in paths_to:
+                 ## current node is at goal
+                print("-------------- GOAL REACHED -------------\n back point: ", fork_node)
+                if fork_node:
+                    ## if fork node exists then go back to it
+                    next_node = paths_from[current_node]
+                    sub_state = "go_in"
+                
+            elif sub_state == "go_in":
+                ## go down the tree
+                
+                if current_node == fork_node and \
+                   len(paths_to[current_node])>1:                
+                    paths_to[current_node].pop(0)
+                    if len(paths_to[current_node])==0: fork_node = None
+                    sub_state = "go_out"    
+                
+                next_node = paths_from[current_node]  
+                
+            elif sub_state == "go_out":
+                ## go up the tree
+                
+                target_list = paths_to[current_node]
+    
+                if len(target_list) > 1:
+                    fork_node.append(current_node)
+                    
+                next_node = target_list[0]
+            
+            x,y = np.array(next_node.point) - .25
             theta = np.arctan(y/x)
             state = 'move'
             
         elif state == 'move':
+            ## move to waypoint
+            
             lspeed, rspeed = get_wheel_speeds([x,1.5-y,theta]) 
             leftMotor.setVelocity(lspeed)
             rightMotor.setVelocity(rspeed) 
             
+            # get differences between current node and next node/goal nodes
             cur_pos = np.array(supervisor.supervisor_get_robot_pose()[:2])
-            dist = np.linalg.norm(np.array(cur_pos[0:2:1]) - np.array([x,y]))
-            if dist < 0.035:
+            goal_pos = np.array([g.point for g in TARGETS])
+            prev_dist = dist
+            dist = np.linalg.norm(np.array(cur_pos) - np.array([x,y]))
+            dist_diff = np.abs(prev_dist - dist) if prev_dist else 0.1
+            goal_dist = np.linalg.norm(np.array(cur_pos) - goal_pos, axis=1)
+            min_goal_indx = np.argmin(goal_dist)
+            
+            # or dist_diff < 1.5e-07: # makes it spin sometimes
+            if dist < 0.045:
+                ## distance threshold reached for node or stuck trying to reach one too close to wall
+                current_node = next_node
                 state = 'get_waypoint'
-            # use supervisor to get curr position 
-            # w = npling(np.array(currposition) - np.array([x,y])
-            # dist =  w 
-            # if w < 0.5 then change state to get waypoit
-    
-        # Enter here functions to send actuator commands, like:
-        #  motor.setPosition(10.0)
+            elif np.any(goal_dist) < 0.35:
+                ## close enough to goal, prevents weird double backs
+                current_node = TARGETS[min_goal_indx]
+                state = "get_waypoint"
+                
         
-        
-        # if state[-8:] == "obstacle":
-            # reduce, increase = 0.95, 1.05
-            
-            # if state == "left_obstacle":
-            
-                # if not l_mult and not r_mult:
-                    # l_mult, r_mult = 1., 0.1
-                
-                # l_mult, r_mult = l_mult*reduce, r_mult*increase
-                # l_mult, r_mult = 1 if l_mult>1 else l_mult, \
-                                 # 1 if r_mult>1 else r_mult
-                
-            
-            # elif state == "right_obstacle":
-            
-                # if not l_mult and not r_mult:
-                    # l_mult, r_mult = 0.1, 1.
-            
-                # l_mult, r_mult = l_mult*increase, r_mult*reduce
-                # l_mult, r_mult = 1 if l_mult>1 else l_mult, \
-                                     # 1 if r_mult>1 else r_mult
-                                     
-            # robo_pose = supervisor.supervisor_get_robot_pose()[:2]
-            # slope = (dest[1]-source[1]) / (dest[0]-source[0])
-            
-            # if slope * robo_pose[0] == robo_pose[1]: 
-                ##robot has returned to path, reset
-                # l_mult, r_mult = None, None
-                # return 1,1
-                
-            # leftMotor.setVelocity(leftMotor.getMaxVelocity() * l_mult)
-            # rightMotor.setVelocity(rightMotor.getMaxVelocity() * r_mult)
-        #break
-    # Enter here exit cleanup code.  
+    # Exiting program
     print("BYE")  
     
 
