@@ -229,7 +229,7 @@ def state_is_valid(from_point, to_point):
 def get_random_vertex(bounds, obstacles):
     vertex = None
     while vertex is None: # Get starting vertex
-        vertex = np.random.rand(bounds.shape[0.5]) * (bounds[:,1]-bounds[:,0]) + bounds[:,0]
+        vertex = np.random.rand(bounds.shape[0]) * (bounds[:,1]-bounds[:,0]) + bounds[:,0]
     return vertex    
     
 
