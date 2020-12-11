@@ -10,7 +10,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 0.9999995592134427 0.0006688645268465822 0.0006589333539826469 4.722387419721225
-  position 1.1503773139355107 2.414170104233258 0.7288029323545125
+  position 0.7806832666173062 2.5608738991150357 0.39658475115711966
   follow "e-puck"
 }
 TexturedBackground {
@@ -58,19 +58,19 @@ DEF obstacle MazeBlock {
   length 0.212
 }
 DEF obstacle MazeBlock {
-  translation -0.04 0 0.94
+  translation -0.02 0 0.94
   rotation 0 1 0 1.5708
   name "maze block(6)"
   length 0.212
 }
 DEF obstacle MazeBlock {
-  translation 0.18 0 0.94
+  translation 0.19 0 0.94
   rotation 0 1 0 1.5708
   name "maze block(9)"
   length 0.212
 }
 DEF obstacle MazeBlock {
-  translation 0.0700009 0 1.04
+  translation 0.083 0 1.04
   rotation 0 1 0 -3.1415853071795863
   name "maze block(7)"
   length 0.199

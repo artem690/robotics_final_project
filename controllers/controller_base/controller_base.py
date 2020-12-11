@@ -133,7 +133,7 @@ def visualize_2D_graph(state_bounds, line_segments, nodes, goals, paths, filenam
     
     for targ in TARGETS:
         x,y = targ[0],targ[1]
-        plt.plot(x, t-y, 'kX', markersize=10)
+        plt.plot(x, t-y, 'kx', markersize=10)
         
     for seg in line_segments:
         [x1,y1], [x2,y2] = seg
@@ -229,7 +229,7 @@ def state_is_valid(from_point, to_point):
 def get_random_vertex(bounds, obstacles):
     vertex = None
     while vertex is None: # Get starting vertex
-        vertex = np.random.rand(bounds.shape[0]) * (bounds[:,1]-bounds[:,0]) + bounds[:,0]
+        vertex = np.random.rand(bounds.shape[0.5]) * (bounds[:,1]-bounds[:,0]) + bounds[:,0]
     return vertex    
     
 
@@ -328,7 +328,7 @@ def main():
     #  motor = robot.getMotor('motorname')
     #  ds = robot.getDistanceSensor('dsname')
     #  ds.enable(timestep)2
-    K = 500 # adjustable
+    K = 1000 # adjustable
     start_pose = supervisor.supervisor_get_robot_pose()[:2]
     start_pose+=.25
     starting_point = Node(start_pose[:2], parent=None)
@@ -355,6 +355,9 @@ def main():
         thetaa = math.atan(x/y) # maybe change 
         # print(thetaa, "----")
         print(math.atan(1.12/0.92))
+        
+        
+        
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
