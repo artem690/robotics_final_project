@@ -283,7 +283,7 @@ def get_path(node_list, start_node):
         goal_parent = get_valid_connect(node_list, goal)
         
         if goal_parent != -1:
-            goal_node = Node(goal, parent=goal_parent, path_from_parent=[goal, goal_parent.point])
+            goal_node = Node(goal, parent=goal_parent, path_from_parent=[goal_parent.point, goal])
             node_list.append(goal_node)
             TARGETS[ix] = goal_node
         else:
@@ -346,7 +346,7 @@ def detect_obstacle(psValues):
 def main():
     global OBSTACLES, LINE_SEGMENTS, TARGETS, state
     l_mult, r_mult, sub_state = None, None, "go_out"
-    K = 100 # adjustable k-val for number of random points
+    K = 2000 # adjustable k-val for number of random points
     start_pose = supervisor.supervisor_get_robot_pose()[:2]
     start_pose+=.25
     starting_point = Node(start_pose[:2], parent=None)
@@ -362,7 +362,6 @@ def main():
     paths_from = get_path(node_list, starting_point)
     paths_to = visualize_2D_graph(MAP_BOUNDS, LINE_SEGMENTS, node_list, paths_from, 'rrt_maze_run.png')
     state = 'get_waypoint' 
-       
     # Main loop:
     # - perform simulation steps until Webots is stopping the controller
     while robot.step(timestep) != -1:
@@ -376,7 +375,7 @@ def main():
                  current_node not in paths_to:
                  ## current node is at goal
                 print("-------------- GOAL REACHED -------------\n back point: ", fork_node)
-                if fork_node:
+                if len(fork_node) > 0:
                     ## if fork node exists then go back to it
                     next_node = paths_from[current_node]
                     sub_state = "go_in"
@@ -384,24 +383,24 @@ def main():
             elif sub_state == "go_in":
                 ## go down the tree
                 
-                if current_node == fork_node and \
+                if current_node in fork_node and \
                    len(paths_to[current_node])>1:                
                     paths_to[current_node].pop(0)
                     if len(paths_to[current_node])==0: fork_node = None
-                    sub_state = "go_out"    
-                
-                next_node = paths_from[current_node]  
+                    sub_state = "go_out"  
+                    next_node = paths_to[current_node][0]  
+                else:
+                    next_node = paths_from[current_node]  
                 
             elif sub_state == "go_out":
                 ## go up the tree
-                
                 target_list = paths_to[current_node]
     
                 if len(target_list) > 1:
                     fork_node.append(current_node)
                     
                 next_node = target_list[0]
-            
+
             x,y = np.array(next_node.point) - .25
             theta = np.arctan(y/x)
             state = 'move'
@@ -415,22 +414,21 @@ def main():
             
             # get differences between current node and next node/goal nodes
             cur_pos = np.array(supervisor.supervisor_get_robot_pose()[:2])
-            goal_pos = np.array([g.point for g in TARGETS])
+            goal_pos = np.array([np.array(g.point) for g in TARGETS])
             prev_dist = dist
             dist = np.linalg.norm(np.array(cur_pos) - np.array([x,y]))
             dist_diff = np.abs(prev_dist - dist) if prev_dist else 0.1
             goal_dist = np.linalg.norm(np.array(cur_pos) - goal_pos, axis=1)
             min_goal_indx = np.argmin(goal_dist)
-            
-            # or dist_diff < 1.5e-07: # makes it spin sometimes
-            if dist < 0.045:
-                ## distance threshold reached for node or stuck trying to reach one too close to wall
-                current_node = next_node
-                state = 'get_waypoint'
-            elif np.any(goal_dist) < 0.35:
+            if np.any(goal_dist < 0.05):
                 ## close enough to goal, prevents weird double backs
                 current_node = TARGETS[min_goal_indx]
                 state = "get_waypoint"
+                # or dist_diff < 1.5e-07: # makes it spin sometimes
+            elif dist < 0.05 or dist_diff < 1.51e-07:
+                ## distance threshold reached for node or stuck trying to reach one too close to wall
+                current_node = next_node
+                state = 'get_waypoint'
                 
         
     # Exiting program
