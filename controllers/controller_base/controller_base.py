@@ -422,6 +422,7 @@ def main():
             min_goal_indx = np.argmin(goal_dist)
             if np.any(goal_dist < 0.05):
                 ## close enough to goal, prevents weird double backs
+                #TARGETS.remove(min_goal_indx)
                 current_node = TARGETS[min_goal_indx]
                 state = "get_waypoint"
                 # or dist_diff < 1.5e-07: # makes it spin sometimes
