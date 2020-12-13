@@ -10,7 +10,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 1 0 0 4.71238898038469
-  position 0.9475990804382288 4.189093401094945 0.6587847263126576
+  position 0.367989175188721 3.0728975885656724 0.6158506592571386
   follow "e-puck"
 }
 TexturedBackground {
@@ -34,22 +34,6 @@ RectangleArena {
 }
 Can {
   translation 0.15 0.06 0.12
-}
-RubberDuck {
-  translation 0.32 0.01 1.2
-  rotation 0 1 0 4.692820414042842e-06
-  name "rubber duck(1)"
-  scale 0.5
-}
-RubberDuck {
-  translation 0.160001 0.01 0.74
-  rotation 0 1 0 4.692820414042842e-06
-  name "rubber duck(2)"
-  scale 0.5
-}
-RubberDuck {
-  translation 1.11 0.01 0.25
-  scale 0.5
 }
 DEF obstacle MazeBlock {
   translation 0.68 0 1.4
