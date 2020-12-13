@@ -52,7 +52,7 @@ MAX_VEL_REDUCTION = 0.25
 
 MAP_BOUNDS = np.array([[0,1.5],[0,1.5]])
 OBSTACLES = np.array(supervisor.supervisor_get_obstacle_positions())
-OBSTACLES = list(map(lambda x: [x[0]+0.25,x[1],x[2]], OBSTACLES))
+OBSTACLES = list(map(lambda x: [x[0],x[1],x[2]], OBSTACLES))
 
 test=np.array(supervisor.supervisor_get_targets()) # find positions of objects
 print("ITEMS =")
@@ -81,9 +81,8 @@ def get_wheel_speeds(target_pose):
     global pose_x, pose_y, pose_theta, left_wheel_direction, right_wheel_direction
 
     pose_x, pose_y, pose_theta = supervisor.supervisor_get_robot_pose()
-    pose_y = 1.5 - pose_y
-
-    bearing_error = math.atan2( (target_pose[1] - pose_y), (target_pose[0] - pose_x) ) - pose_theta
+    pose_y = 1.5-pose_y
+    bearing_error = get_bounded_theta(math.atan2( (target_pose[1] - pose_y), (target_pose[0] - pose_x) ) - pose_theta)
     distance_error = np.linalg.norm(target_pose[:2] - np.array([pose_x,pose_y]))
     heading_error = target_pose[2] -  pose_theta
 
@@ -346,16 +345,16 @@ def detect_obstacle(psValues):
 def main():
     global OBSTACLES, LINE_SEGMENTS, TARGETS, state
     l_mult, r_mult, sub_state = None, None, "go_out"
-    K = 2000 # adjustable k-val for number of random points
+    K = 1500 # adjustable k-val for number of random points
     start_pose = supervisor.supervisor_get_robot_pose()[:2]
-    start_pose+=.25
+    # start_pose+=.25
     starting_point = Node(start_pose[:2], parent=None)
     fork_node, dist = [], None
     
     obsTransform(OBSTACLES)
     
     # can change delta q (last param) to make lines longer/shorter
-    node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, .1)
+    node_list = build_rrt(MAP_BOUNDS, OBSTACLES, state_is_valid, starting_point, None, K, .2)
     current_node = starting_point
 
     # plan path and set initial state
@@ -401,7 +400,7 @@ def main():
                     
                 next_node = target_list[0]
 
-            x,y = np.array(next_node.point) - .25
+            x,y = np.array(next_node.point)
             theta = np.arctan(y/x)
             state = 'move'
             
@@ -420,13 +419,13 @@ def main():
             dist_diff = np.abs(prev_dist - dist) if prev_dist else 0.1
             goal_dist = np.linalg.norm(np.array(cur_pos) - goal_pos, axis=1)
             min_goal_indx = np.argmin(goal_dist)
-            if np.any(goal_dist < 0.05):
+            if np.any(goal_dist < 0.06):
                 ## close enough to goal, prevents weird double backs
-                #TARGETS.remove(min_goal_indx)
+                TARGETS.remove(min_goal_indx)
                 current_node = TARGETS[min_goal_indx]
                 state = "get_waypoint"
                 # or dist_diff < 1.5e-07: # makes it spin sometimes
-            elif dist < 0.05 or dist_diff < 1.51e-07:
+            elif dist < 0.05:
                 ## distance threshold reached for node or stuck trying to reach one too close to wall
                 current_node = next_node
                 state = 'get_waypoint'

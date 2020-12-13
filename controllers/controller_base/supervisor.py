@@ -77,10 +77,6 @@ def supervisor_get_targets():
     
 
     target_collect.append(can_coords)
-    
-    for t in target_collect:
-        t[0] += .25
-        t[1] += .25
         
     return target_collect
 
